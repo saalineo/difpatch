@@ -1,5 +1,5 @@
 @fieldwise_init
-struct Span32(Copyable):
+struct Span32(ImplicitlyCopyable):
     """Offset/length into a source buffer; borrows nothing."""
     var start: UInt32
     var len: UInt32
@@ -162,3 +162,14 @@ def tokenize_pair[
             out.spans.append(Span32(UInt32(pos), UInt32(end - pos)))
             pos = end
     return TokenizedPair(old_tokens^, new_tokens^, UInt32(len(entries)))
+
+
+def split[S: Splitter](src: Span[Byte, _], splitter: S) -> List[Span32]:
+    """Tokenize one buffer into spans only (no interning)."""
+    var spans = List[Span32]()
+    var pos = 0
+    while pos < len(src):
+        var end = splitter.token_end(src, pos)
+        spans.append(Span32(UInt32(pos), UInt32(end - pos)))
+        pos = end
+    return spans^

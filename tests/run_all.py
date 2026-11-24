@@ -1,14 +1,6 @@
 from __future__ import annotations
 
 import subprocess
-import sys
-import os
-
-
-STUB_ERRORS = (
-    "difpatch unified_diff: not implemented (Phase 1 foundations only)",
-    "difpatch apply_patch: not implemented (Phase 1 foundations only)",
-)
 
 
 def run(test: str) -> subprocess.CompletedProcess[str]:
@@ -21,31 +13,16 @@ def run(test: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+TESTS = ["oracle", "tokenize", "myers", "patch", "roundtrip"]
+
+
 def main() -> int:
-    oracle = run("tests/test_oracle.mojo")
-    print(oracle.stdout, end="")
-    if oracle.returncode:
-        return oracle.returncode
-
-    tokenize = run("tests/test_tokenize.mojo")
-    print(tokenize.stdout, end="")
-    if tokenize.returncode:
-        return tokenize.returncode
-
-    myers = run("tests/test_myers.mojo")
-    print(myers.stdout, end="")
-    if myers.returncode:
-        return myers.returncode
-
-    roundtrip = run("tests/test_roundtrip.mojo")
-    print(roundtrip.stdout, end="")
-    if os.environ.get("DIFPATCH_EXPECT_RED") == "1":
-        if roundtrip.returncode == 0 or not any(error in roundtrip.stdout for error in STUB_ERRORS):
-            print("round-trip test did not fail from a Phase 1 API stub", file=sys.stderr)
-            return 1
-        print("all Phase 1 checks: PASS (round-trip is intentionally red)")
-        return 0
-    return roundtrip.returncode
+    for name in TESTS:
+        result = run(f"tests/test_{name}.mojo")
+        print(result.stdout, end="")
+        if result.returncode:
+            return result.returncode
+    return 0
 
 
 if __name__ == "__main__":

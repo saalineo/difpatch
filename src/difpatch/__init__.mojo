@@ -11,3 +11,7 @@ from difpatch.tokenize import (
     tokenize_pair,
 )
 from difpatch.myers import diff_ids
+from difpatch.hunks import group_hunks
+from difpatch.format import format_patch, hunk_header
+from difpatch.parse import ParsedHunk, ParsedPatch, PatchLine, parse_patch
+from difpatch.apply import ApplyOptions, ApplyReport, HunkResult, apply_report

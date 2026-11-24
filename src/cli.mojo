@@ -20,4 +20,4 @@ def main() raises:
     new_file.close()
 
     # unified_diff owns the ---/+++ header contract, including these defaults.
-    print(unified_diff(old, new, old_label="a/f.txt", new_label="b/f.txt"))
+    print(unified_diff(old, new, old_label="a/f.txt", new_label="b/f.txt"), end="")

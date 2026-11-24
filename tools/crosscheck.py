@@ -92,6 +92,10 @@ def check_case(difpatch: Path, seed: int, tolerance: int) -> tuple[bool, str]:
             saved = save_failure(seed, old, new, patch)
             return False, f"seed {seed}: difpatch failed ({result.stderr.strip()}); saved {saved}"
 
+        if old == new:
+            # Identical inputs give an empty patch (as diff and git do); git apply refuses empty input.
+            return (True, "") if not patch else (False, f"seed {seed}: expected an empty patch for identical files")
+
         git_lines = git_changed_lines(old_path, new_path)
         difpatch_lines = changed_lines(patch)
         if difpatch_lines > git_lines + tolerance:

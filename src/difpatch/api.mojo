@@ -1,3 +1,11 @@
+from difpatch.apply import ApplyOptions, apply_report
+from difpatch.hunks import group_hunks
+from difpatch.format import format_patch
+from difpatch.myers import diff_ids
+from difpatch.parse import parse_patch
+from difpatch.tokenize import LineSplitter, tokenize_pair
+
+
 def unified_diff(
     old: String,
     new: String,
@@ -5,16 +13,25 @@ def unified_diff(
     old_label: String = "a/f.txt",
     new_label: String = "b/f.txt",
 ) raises -> String:
+    """Unified diff of old -> new; empty string when they are identical."""
     # The API owns ---/+++ headers; the CLI only supplies its default labels.
-    _ = old
-    _ = new
-    _ = context
-    _ = old_label
-    _ = new_label
-    raise Error("difpatch unified_diff: not implemented (Phase 1 foundations only)")
+    var old_bytes = old.as_bytes()
+    var new_bytes = new.as_bytes()
+    var pair = tokenize_pair(old_bytes, new_bytes, LineSplitter())
+    var result = diff_ids(Span(pair.old.ids), Span(pair.new.ids))
+    var hunks = group_hunks(result.ops, context)
+    return format_patch(hunks, old_bytes, pair.old.spans, new_bytes, pair.new.spans, old_label, new_label)
 
 
-def apply_patch(original: String, patch: String) raises -> String:
-    _ = original
-    _ = patch
-    raise Error("difpatch apply_patch: not implemented (Phase 1 foundations only)")
+def apply_patch(
+    original: String, patch: String, max_offset: Int = 0, max_fuzz: Int = 0
+) raises -> String:
+    """Apply a single-file unified diff. Strict by default: every hunk must match
+    exactly where it says. Any rejected hunk raises; use apply_report for a dry run."""
+    var patch_bytes = patch.as_bytes()
+    var parsed = parse_patch(patch_bytes)
+    var report = apply_report(original.as_bytes(), patch_bytes, parsed, ApplyOptions(max_offset, max_fuzz))
+    for result in report.results:
+        if not result.applied:
+            raise Error(result.message)
+    return String(from_utf8=report.output)
