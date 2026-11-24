@@ -27,6 +27,11 @@ def main() -> int:
     if oracle.returncode:
         return oracle.returncode
 
+    tokenize = run("tests/test_tokenize.mojo")
+    print(tokenize.stdout, end="")
+    if tokenize.returncode:
+        return tokenize.returncode
+
     roundtrip = run("tests/test_roundtrip.mojo")
     print(roundtrip.stdout, end="")
     if os.environ.get("FLUX_EXPECT_RED") == "1":
