@@ -1,4 +1,4 @@
-from difpatch.api import apply_patch, unified_diff
+from difpatch.api import apply_patch, diff_lines, myers_diff, unified_diff
 from difpatch.types import DiffResult, EditOp, Hunk, OpTag
 from difpatch.tokenize import (
     ByteSplitter,

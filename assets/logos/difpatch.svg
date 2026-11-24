@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>difpatch - 08: The Myers Lattice</title>
+  <!-- Background coordinate nodes -->
+  <circle cx="56" cy="56" r="16" fill="#0F172A"/>
+  <circle cx="128" cy="56" r="16" fill="#0F172A"/>
+  <circle cx="200" cy="56" r="10" fill="#0F172A"/>
+  
+  <circle cx="56" cy="128" r="10" fill="#0F172A"/>
+  <circle cx="128" cy="128" r="12" fill="#0F172A"/>
+  <circle cx="200" cy="128" r="16" fill="#0F172A"/>
+  
+  <circle cx="56" cy="200" r="10" fill="#0F172A"/>
+  <circle cx="128" cy="200" r="10" fill="#0F172A"/>
+  <circle cx="200" cy="200" r="16" fill="#0F172A"/>
+
+  <!-- Horizontal delete path (56,56) to (128,56) -->
+  <rect x="56" y="44" width="72" height="24" rx="12" fill="#0F172A"/>
+  <!-- Diagonal 45-deg match path (128,56) to (200,128) -->
+  <path d="M 119 65 L 191 137 L 208 120 L 136 48 Z" fill="#0F172A"/>
+  <!-- Vertical insert path (200,128) to (200,200) -->
+  <rect x="188" y="128" width="24" height="72" rx="12" fill="#0F172A"/>
+</svg>

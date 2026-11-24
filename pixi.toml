@@ -12,6 +12,7 @@ test_tokenize = "mojo run -I src -I tests tests/test_tokenize.mojo"
 test_myers = "mojo run -I src -I tests tests/test_myers.mojo"
 test_patch = "mojo run -I src -I tests tests/test_patch.mojo"
 test_roundtrip = "mojo run -I src -I tests tests/test_roundtrip.mojo"
+bench = "mkdir -p build && mojo build -I src -I tests tools/bench.mojo -o build/bench && build/bench"
 build_cli = "mkdir -p build && mojo build -I src src/cli.mojo -o build/difpatch"
 crosscheck = "python3 tools/crosscheck.py --difpatch build/difpatch"
 

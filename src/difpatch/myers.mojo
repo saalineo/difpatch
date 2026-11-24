@@ -1,3 +1,4 @@
+from difpatch.simd import common_prefix, common_suffix
 from difpatch.types import DiffResult, EditOp, OpTag
 
 
@@ -165,17 +166,17 @@ def _solve(
     mut vb: List[Int],
     mut out: _Builder,
 ) raises:
-    var prefix = 0
-    while a_lo < a_hi and b_lo < b_hi and a[a_lo] == b[b_lo]:
-        a_lo += 1
-        b_lo += 1
-        prefix += 1
+    var window_a = a[a_lo:a_hi]
+    var window_b = b[b_lo:b_hi]
+    var prefix = common_prefix(window_a, window_b, min(len(window_a), len(window_b)))
+    a_lo += prefix
+    b_lo += prefix
     out.equal(prefix)
-    var suffix = 0
-    while a_lo < a_hi and b_lo < b_hi and a[a_hi - 1] == b[b_hi - 1]:
-        a_hi -= 1
-        b_hi -= 1
-        suffix += 1
+    window_a = a[a_lo:a_hi]
+    window_b = b[b_lo:b_hi]
+    var suffix = common_suffix(window_a, window_b, min(len(window_a), len(window_b)))
+    a_hi -= suffix
+    b_hi -= suffix
     if a_lo == a_hi:
         out.insert(b_hi - b_lo)
     elif b_lo == b_hi:
@@ -198,8 +199,61 @@ def diff_ids(
 ) raises -> DiffResult:
     """Edit script turning old into new. max_cost 0 = unlimited (always minimal);
     otherwise a non-minimal but valid script once the search exceeds that cost."""
+    # Trim first (SIMD): the prepass below is O(N) and pointless on the shared ends.
+    var prefix = common_prefix(old, new, min(len(old), len(new)))
+    var suffix = common_suffix(old[prefix:], new[prefix:], min(len(old), len(new)) - prefix)
+    var a_end = len(old) - suffix
+    var b_end = len(new) - suffix
     var out = _Builder()
+    out.equal(prefix)
     var vf = List[Int]()
     var vb = List[Int]()
-    _solve(old, new, 0, len(old), 0, len(new), Int(max_cost), vf, vb, out)
+
+    # A token absent from the other side can never be matched, so dropping it leaves the
+    # minimal distance unchanged while shrinking the quadratic part of the search.
+    var top = UInt32(0)
+    for i in range(prefix, a_end):
+        top = max(top, old[i])
+    for i in range(prefix, b_end):
+        top = max(top, new[i])
+    var in_old = List[Bool](length=Int(top) + 1, fill=False)
+    var in_new = List[Bool](length=Int(top) + 1, fill=False)
+    for i in range(prefix, a_end):
+        in_old[Int(old[i])] = True
+    for i in range(prefix, b_end):
+        in_new[Int(new[i])] = True
+    var kept_old = List[UInt32]()
+    var map_old = List[Int]()
+    for i in range(prefix, a_end):
+        if in_new[Int(old[i])]:
+            kept_old.append(old[i])
+            map_old.append(i)
+    var kept_new = List[UInt32]()
+    var map_new = List[Int]()
+    for i in range(prefix, b_end):
+        if in_old[Int(new[i])]:
+            kept_new.append(new[i])
+            map_new.append(i)
+
+    if len(kept_old) == a_end - prefix and len(kept_new) == b_end - prefix:
+        _solve(old, new, prefix, a_end, prefix, b_end, Int(max_cost), vf, vb, out)
+    else:
+        var inner = _Builder()
+        _solve(Span(kept_old), Span(kept_new), 0, len(kept_old), 0, len(kept_new), Int(max_cost), vf, vb, inner)
+        var old_cursor = prefix
+        var new_cursor = prefix
+        for op in inner^.finish():
+            if op.tag != OpTag.EQUAL:
+                continue
+            for k in range(Int(op.length)):
+                var o = map_old[Int(op.old_idx) + k]
+                var n = map_new[Int(op.new_idx) + k]
+                out.delete(o - old_cursor)
+                out.insert(n - new_cursor)
+                out.equal(1)
+                old_cursor = o + 1
+                new_cursor = n + 1
+        out.delete(a_end - old_cursor)
+        out.insert(b_end - new_cursor)
+    out.equal(suffix)
     return DiffResult(out^.finish(), UInt32(len(old)), UInt32(len(new)))

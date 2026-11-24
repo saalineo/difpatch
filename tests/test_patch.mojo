@@ -1,4 +1,4 @@
-from difpatch.api import apply_patch, unified_diff
+from difpatch.api import apply_patch, diff_lines, myers_diff, unified_diff
 from difpatch.apply import ApplyOptions, apply_report
 from difpatch.parse import parse_patch
 from support.prng import Prng, copy_lines, join_lines, mutate, random_lines
@@ -35,6 +35,15 @@ def numbered(count: Int, changed: List[Int]) -> String:
 
 
 def main() raises:
+    # Public API surface.
+    var dl = diff_lines("a\nb\n", "a\nc\n")
+    if dl.edit_distance() != 2 or dl.old_len != 2 or dl.new_len != 2:
+        raise Error("diff_lines")
+    var ia: List[UInt32] = [1, 2, 3]
+    var ib: List[UInt32] = [1, 3]
+    if myers_diff(Span(ia), Span(ib)).edit_distance() != 1:
+        raise Error("myers_diff")
+
     # Formatter quirks.
     expect_eq("replace", unified_diff("a\nb\nc\n", "a\nB\nc\n"), "--- a/f.txt\n+++ b/f.txt\n@@ -1,3 +1,3 @@\n a\n-b\n+B\n c\n")
     expect_eq("identical", unified_diff("a\n", "a\n"), "")

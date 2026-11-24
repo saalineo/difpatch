@@ -1,3 +1,6 @@
+from difpatch.simd import find_byte, hash_span
+
+
 @fieldwise_init
 struct Span32(ImplicitlyCopyable):
     """Offset/length into a source buffer; borrows nothing."""
@@ -49,10 +52,8 @@ struct LineSplitter(Splitter):
         pass
 
     def token_end(self, src: Span[Byte, _], pos: Int) -> Int:
-        for i in range(pos, len(src)):
-            if src[i] == 10:
-                return i + 1
-        return len(src)
+        var i = find_byte(src, pos, 10)
+        return i + 1 if i < len(src) else len(src)
 
 
 struct ByteSplitter(Splitter):
@@ -90,13 +91,6 @@ struct WordSplitter(Splitter):
         return end
 
 
-def _hash(src: Span[Byte, _], start: Int, end: Int) -> UInt64:
-    var h = UInt64(0xCBF29CE484222325)  # FNV-1a
-    for i in range(start, end):
-        h = (h ^ UInt64(src[i])) * UInt64(0x100000001B3)
-    return h
-
-
 @fieldwise_init
 struct _Entry(Copyable):
     var hash: UInt64
@@ -127,7 +121,7 @@ def tokenize_pair[
             var end = splitter.token_end(src, pos)
             if end <= pos or end > len(src):
                 raise Error("difpatch tokenize: splitter made no progress")
-            var h = _hash(src, pos, end)
+            var h = hash_span(src, pos, end)
             var slot = Int(h) & mask
             var id = UInt32(0)
             var found = False
@@ -135,12 +129,21 @@ def tokenize_pair[
                 ref e = entries[Int(table[slot]) - 1]
                 if e.hash == h and Int(e.len) == end - pos:
                     var rep = old if e.side == 0 else new
-                    var equal = True
-                    for k in range(end - pos):
-                        if rep[Int(e.start) + k] != src[pos + k]:
-                            equal = False
+                    # Inline 16-byte compare: a helper taking both spans trips the aliasing check.
+                    var rp = rep.unsafe_ptr() + Int(e.start)
+                    var sp = src.unsafe_ptr() + pos
+                    var n_bytes = end - pos
+                    var same = True
+                    var k = 0
+                    while k + 16 <= n_bytes:
+                        if not rp.unsafe_load[width=16](k).eq(sp.unsafe_load[width=16](k)).reduce_and():
+                            same = False
                             break
-                    if equal:
+                        k += 16
+                    while same and k < n_bytes:
+                        same = rp.unsafe_load(k) == sp.unsafe_load(k)
+                        k += 1
+                    if same:
                         id = table[slot] - 1
                         found = True
                         break

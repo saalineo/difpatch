@@ -47,10 +47,12 @@ def main() raises:
     check_both(ids(1, 2, 3, 4), ids(3, 4))
     check_both(ids(9, 1, 2, 8), ids(9, 5, 8))
     check_both(ids(1, 2, 3, 4, 5, 6, 7), ids(2, 4, 6, 8))
+    check_both(ids(1, 2, 3, 4, 5), ids(1, 9, 3, 8, 5))  # tokens unique to one side
+    check_both(ids(7, 7, 1, 7), ids(2, 1, 2))
 
     for seed in range(300):
         var rng = Prng(UInt64(seed))
-        var alphabet = 2 + rng.bounded(6)
+        var alphabet = 2 + rng.bounded(6 if seed % 2 == 0 else 60)  # wide alphabets exercise the unique-token prepass
         var old = List[UInt32]()
         for _ in range(rng.bounded(40)):
             old.append(UInt32(rng.bounded(alphabet)))
