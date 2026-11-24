@@ -1,0 +1,11 @@
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+
+# Local build and language caches
+/build/
+/.mojo_cache/
+__pycache__/
+*.py[cod]
+
+/tools/failures/
