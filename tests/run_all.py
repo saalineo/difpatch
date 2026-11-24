@@ -6,8 +6,8 @@ import os
 
 
 STUB_ERRORS = (
-    "flux unified_diff: not implemented (Phase 1 foundations only)",
-    "flux apply_patch: not implemented (Phase 1 foundations only)",
+    "difpatch unified_diff: not implemented (Phase 1 foundations only)",
+    "difpatch apply_patch: not implemented (Phase 1 foundations only)",
 )
 
 
@@ -32,9 +32,14 @@ def main() -> int:
     if tokenize.returncode:
         return tokenize.returncode
 
+    myers = run("tests/test_myers.mojo")
+    print(myers.stdout, end="")
+    if myers.returncode:
+        return myers.returncode
+
     roundtrip = run("tests/test_roundtrip.mojo")
     print(roundtrip.stdout, end="")
-    if os.environ.get("FLUX_EXPECT_RED") == "1":
+    if os.environ.get("DIFPATCH_EXPECT_RED") == "1":
         if roundtrip.returncode == 0 or not any(error in roundtrip.stdout for error in STUB_ERRORS):
             print("round-trip test did not fail from a Phase 1 API stub", file=sys.stderr)
             return 1

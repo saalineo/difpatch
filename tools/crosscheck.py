@@ -78,27 +78,27 @@ def check_apply(command: list[str], repo: Path, expected: str) -> tuple[bool, st
     return result.returncode == 0 and actual == expected, result.stderr
 
 
-def check_case(flux: Path, seed: int, tolerance: int) -> tuple[bool, str]:
+def check_case(difpatch: Path, seed: int, tolerance: int) -> tuple[bool, str]:
     old, new = random_pair(seed)
-    with tempfile.TemporaryDirectory(prefix="flux-crosscheck-") as raw:
+    with tempfile.TemporaryDirectory(prefix="difpatch-crosscheck-") as raw:
         root = Path(raw)
         old_path, new_path, patch_path = root / "old.txt", root / "new.txt", root / "patch.diff"
         old_path.write_text(old)
         new_path.write_text(new)
-        result = subprocess.run([flux, "diff", old_path, new_path], text=True, capture_output=True, check=False)
+        result = subprocess.run([difpatch, "diff", old_path, new_path], text=True, capture_output=True, check=False)
         patch = result.stdout
         patch_path.write_text(patch)
         if result.returncode:
             saved = save_failure(seed, old, new, patch)
-            return False, f"seed {seed}: flux failed ({result.stderr.strip()}); saved {saved}"
+            return False, f"seed {seed}: difpatch failed ({result.stderr.strip()}); saved {saved}"
 
         git_lines = git_changed_lines(old_path, new_path)
-        flux_lines = changed_lines(patch)
-        if flux_lines > git_lines + tolerance:
+        difpatch_lines = changed_lines(patch)
+        if difpatch_lines > git_lines + tolerance:
             saved = save_failure(seed, old, new, patch)
-            return False, f"seed {seed}: flux changed {flux_lines}, git reference {git_lines}; saved {saved}"
-        if flux_lines != git_lines:
-            print(f"warning seed {seed}: flux changed {flux_lines}, git reference {git_lines}")
+            return False, f"seed {seed}: difpatch changed {difpatch_lines}, git reference {git_lines}; saved {saved}"
+        if difpatch_lines != git_lines:
+            print(f"warning seed {seed}: difpatch changed {difpatch_lines}, git reference {git_lines}")
 
         for name, command in (("git apply", ["git", "apply", "patch.diff"]), ("patch", ["patch", "-p1", "--batch", "-i", "patch.diff"])):
             repo = root / name.replace(" ", "-")
@@ -117,15 +117,15 @@ def check_case(flux: Path, seed: int, tolerance: int) -> tuple[bool, str]:
 def main() -> int:
     changed_lines_self_test()
     parser = argparse.ArgumentParser()
-    parser.add_argument("--flux", type=Path, required=True)
+    parser.add_argument("--difpatch", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--cases", type=int, default=32)
     parser.add_argument("--tolerance", type=int, default=0)
     args = parser.parse_args()
-    if not args.flux.is_file():
-        parser.error(f"flux executable does not exist: {args.flux}")
+    if not args.difpatch.is_file():
+        parser.error(f"difpatch executable does not exist: {args.difpatch}")
     for seed in range(args.seed, args.seed + args.cases):
-        ok, message = check_case(args.flux.resolve(), seed, args.tolerance)
+        ok, message = check_case(args.difpatch.resolve(), seed, args.tolerance)
         if not ok:
             print(message, file=sys.stderr)
             return 1

@@ -1,16 +1,16 @@
 from std.sys import argv
 
-from flux.api import unified_diff
+from difpatch.api import unified_diff
 
 
 def main() raises:
     var args = argv()
     if len(args) != 4:
-        raise Error("usage: flux diff OLD NEW")
+        raise Error("usage: difpatch diff OLD NEW")
 
     var command = String(args[1])
     if command != "diff":
-        raise Error("usage: flux diff OLD NEW")
+        raise Error("usage: difpatch diff OLD NEW")
 
     var old_file = open(args[2], "r")
     var old = old_file.read()

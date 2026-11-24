@@ -11,10 +11,10 @@ def unified_diff(
     _ = context
     _ = old_label
     _ = new_label
-    raise Error("flux unified_diff: not implemented (Phase 1 foundations only)")
+    raise Error("difpatch unified_diff: not implemented (Phase 1 foundations only)")
 
 
 def apply_patch(original: String, patch: String) raises -> String:
     _ = original
     _ = patch
-    raise Error("flux apply_patch: not implemented (Phase 1 foundations only)")
+    raise Error("difpatch apply_patch: not implemented (Phase 1 foundations only)")

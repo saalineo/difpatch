@@ -1,4 +1,4 @@
-from flux.tokenize import (
+from difpatch.tokenize import (
     ByteSplitter,
     LineSplitter,
     Splitter,

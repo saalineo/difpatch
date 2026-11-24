@@ -1,7 +1,3 @@
-"""Layer 1: bytes -> token IDs. Tokens keep their terminator, so a missing
-final newline is part of the token's bytes and needs no separate flag."""
-
-
 @fieldwise_init
 struct Span32(Copyable):
     """Offset/length into a source buffer; borrows nothing."""
@@ -115,7 +111,7 @@ def tokenize_pair[
     """Tokenize both inputs through one interner so equal tokens share an ID.
     Borrows old/new for the call only; the result owns offsets and IDs."""
     if len(old) > 0xFFFFFFFF or len(new) > 0xFFFFFFFF:
-        raise Error("flux tokenize: input larger than 4 GiB")
+        raise Error("difpatch tokenize: input larger than 4 GiB")
 
     var entries = List[_Entry]()
     var mask = 1023
@@ -130,7 +126,7 @@ def tokenize_pair[
         while pos < len(src):
             var end = splitter.token_end(src, pos)
             if end <= pos or end > len(src):
-                raise Error("flux tokenize: splitter made no progress")
+                raise Error("difpatch tokenize: splitter made no progress")
             var h = _hash(src, pos, end)
             var slot = Int(h) & mask
             var id = UInt32(0)

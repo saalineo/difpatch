@@ -1,4 +1,4 @@
-from flux import DiffResult, EditOp, Hunk, OpTag
+from difpatch import DiffResult, EditOp, Hunk, OpTag
 from support.oracle import lcs_length, minimal_edit_distance, reconstruct
 from support.prng import Prng, copy_lines, mutate, random_lines
 

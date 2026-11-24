@@ -1,4 +1,4 @@
-from flux.types import EditOp, OpTag
+from difpatch.types import EditOp, OpTag
 
 
 def lcs_length(left: List[String], right: List[String]) -> Int:

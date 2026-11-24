@@ -1,4 +1,4 @@
-from flux.api import apply_patch, unified_diff
+from difpatch.api import apply_patch, unified_diff
 from support.prng import Prng, copy_lines, join_lines, mutate, random_lines
 
 
