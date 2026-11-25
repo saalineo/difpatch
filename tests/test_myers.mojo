@@ -49,6 +49,7 @@ def main() raises:
     check_both(ids(1, 2, 3, 4, 5, 6, 7), ids(2, 4, 6, 8))
     check_both(ids(1, 2, 3, 4, 5), ids(1, 9, 3, 8, 5))  # tokens unique to one side
     check_both(ids(7, 7, 1, 7), ids(2, 1, 2))
+    check_both(ids(4000000000, 1, 4294967295), ids(2, 4000000000, 3))
 
     for seed in range(300):
         var rng = Prng(UInt64(seed))

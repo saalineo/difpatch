@@ -1,3 +1,5 @@
+from std.collections import Set
+
 from difpatch.simd import common_prefix, common_suffix
 from difpatch.types import DiffResult, EditOp, OpTag
 
@@ -211,27 +213,22 @@ def diff_ids(
 
     # A token absent from the other side can never be matched, so dropping it leaves the
     # minimal distance unchanged while shrinking the quadratic part of the search.
-    var top = UInt32(0)
+    var in_old = Set[UInt32]()
+    var in_new = Set[UInt32]()
     for i in range(prefix, a_end):
-        top = max(top, old[i])
+        in_old.add(old[i])
     for i in range(prefix, b_end):
-        top = max(top, new[i])
-    var in_old = List[Bool](length=Int(top) + 1, fill=False)
-    var in_new = List[Bool](length=Int(top) + 1, fill=False)
-    for i in range(prefix, a_end):
-        in_old[Int(old[i])] = True
-    for i in range(prefix, b_end):
-        in_new[Int(new[i])] = True
+        in_new.add(new[i])
     var kept_old = List[UInt32]()
     var map_old = List[Int]()
     for i in range(prefix, a_end):
-        if in_new[Int(old[i])]:
+        if old[i] in in_new:
             kept_old.append(old[i])
             map_old.append(i)
     var kept_new = List[UInt32]()
     var map_new = List[Int]()
     for i in range(prefix, b_end):
-        if in_old[Int(new[i])]:
+        if new[i] in in_old:
             kept_new.append(new[i])
             map_new.append(i)
 
