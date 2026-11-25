@@ -4,6 +4,27 @@ from difpatch.simd import common_prefix, common_suffix
 from difpatch.types import DiffResult, EditOp, OpTag
 
 
+struct _Seen(Movable):
+    """Token membership: flat table when IDs are dense (fast), Set when sparse (bounded memory)."""
+    var flat: List[Bool]
+    var hashed: Set[UInt32]
+    var dense: Bool
+
+    def __init__(out self, dense: Bool, size: Int):
+        self.dense = dense
+        self.flat = List[Bool](length=size if dense else 0, fill=False)
+        self.hashed = Set[UInt32]()
+
+    def add(mut self, t: UInt32):
+        if self.dense:
+            self.flat[Int(t)] = True
+        else:
+            self.hashed.add(t)
+
+    def has(self, t: UInt32) -> Bool:
+        return self.flat[Int(t)] if self.dense else t in self.hashed
+
+
 struct _Builder(Movable):
     var ops: List[EditOp]
     var old_cursor: UInt32
@@ -213,8 +234,15 @@ def diff_ids(
 
     # A token absent from the other side can never be matched, so dropping it leaves the
     # minimal distance unchanged while shrinking the quadratic part of the search.
-    var in_old = Set[UInt32]()
-    var in_new = Set[UInt32]()
+    var top = UInt32(0)
+    for i in range(prefix, a_end):
+        top = max(top, old[i])
+    for i in range(prefix, b_end):
+        top = max(top, new[i])
+    # Flat table only while it stays within ~4x the input; hashed IDs (e.g. 4e9) must not allocate by magnitude.
+    var dense = Int(top) < 4 * (a_end + b_end - 2 * prefix) + 64
+    var in_old = _Seen(dense, Int(top) + 1)
+    var in_new = _Seen(dense, Int(top) + 1)
     for i in range(prefix, a_end):
         in_old.add(old[i])
     for i in range(prefix, b_end):
@@ -222,13 +250,13 @@ def diff_ids(
     var kept_old = List[UInt32]()
     var map_old = List[Int]()
     for i in range(prefix, a_end):
-        if old[i] in in_new:
+        if in_new.has(old[i]):
             kept_old.append(old[i])
             map_old.append(i)
     var kept_new = List[UInt32]()
     var map_new = List[Int]()
     for i in range(prefix, b_end):
-        if new[i] in in_old:
+        if in_old.has(new[i]):
             kept_new.append(new[i])
             map_new.append(i)
 
