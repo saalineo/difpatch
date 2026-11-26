@@ -20,6 +20,12 @@ def _push(mut out: List[Byte], text: String):
         out.append(b)
 
 
+def _validate_label(label: String) raises:
+    for b in label.as_bytes():
+        if b == 10 or b == 13:
+            raise Error("difpatch format: labels cannot contain line breaks")
+
+
 def _push_line(mut out: List[Byte], prefix: Byte, src: Span[Byte, _], span: Span32):
     out.append(prefix)
     var end = Int(span.start) + Int(span.len)
@@ -40,6 +46,8 @@ def format_patch(
 ) raises -> String:
     if len(hunks) == 0:
         return ""
+    _validate_label(old_label)
+    _validate_label(new_label)
     var out = List[Byte]()
     _push(out, "--- " + old_label + "\n+++ " + new_label + "\n")
     for hi in range(len(hunks)):

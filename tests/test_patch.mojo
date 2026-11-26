@@ -19,6 +19,16 @@ def expect_fails(name: String, original: String, patch: String, needle: String, 
     raise Error(name + ": expected failure")
 
 
+def expect_invalid_labels(name: String, old_label: String, new_label: String) raises:
+    try:
+        _ = unified_diff("a\n", "b\n", 3, old_label, new_label)
+    except e:
+        if "line breaks" not in String(e):
+            raise Error(name + ": wrong error: " + String(e))
+        return
+    raise Error(name + ": expected failure")
+
+
 def count_hunks(patch: String) -> Int:
     var n = 0
     for line in patch.splitlines():
@@ -51,6 +61,8 @@ def main() raises:
     expect_eq("to empty", unified_diff("x\n", ""), "--- a/f.txt\n+++ b/f.txt\n@@ -1 +0,0 @@\n-x\n")
     expect_eq("no eol", unified_diff("one", "one\n"), "--- a/f.txt\n+++ b/f.txt\n@@ -1 +1 @@\n-one\n\\ No newline at end of file\n+one\n")
     expect_eq("ctx0 insert", unified_diff("a\nb\n", "a\nx\nb\n", 0), "--- a/f.txt\n+++ b/f.txt\n@@ -1,0 +2 @@\n+x\n")
+    expect_invalid_labels("old label newline", "bad\nlabel", "b/f.txt")
+    expect_invalid_labels("new label carriage return", "a/f.txt", "bad\rlabel")
 
     # Grouping: gap of 6 lines merges at context 3, a gap of 7 splits.
     var old = numbered(10, List[Int]())
