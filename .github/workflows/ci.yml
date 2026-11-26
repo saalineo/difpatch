@@ -14,3 +14,4 @@ jobs:
           cache: true
       - run: pixi run test
       - run: pixi run build_cli
+      - run: pixi run crosscheck
