@@ -51,6 +51,14 @@ def main() raises:
     check_both(ids(7, 7, 1, 7), ids(2, 1, 2))
     check_both(ids(4000000000, 1, 4294967295), ids(2, 4000000000, 3))
 
+    # A large rotation exceeds the budget and exercises the limited-search fallback.
+    var large_old = List[UInt32]()
+    var large_new = List[UInt32]()
+    for i in range(300):
+        large_old.append(UInt32(i))
+        large_new.append(UInt32((i + 150) % 300))
+    check(large_old, large_new, 2)
+
     for seed in range(300):
         var rng = Prng(UInt64(seed))
         var alphabet = 2 + rng.bounded(6 if seed % 2 == 0 else 60)  # wide alphabets exercise the unique-token prepass
