@@ -66,6 +66,8 @@ def main() raises:
     expect_fails("truncated", "a\n", "--- a\n+++ b\n@@ -1,2 +1,2 @@\n a\n", "truncated")
     expect_fails("two files", "a\n", "--- a\n+++ b\n@@ -1 +1 @@\n-a\n+b\n--- c\n+++ d\n", "multiple files")
     expect_fails("overlong", "a\n", "--- a\n+++ b\n@@ -1 +1 @@\n-a\n+b\n+c\n", "more lines")
+    expect_fails("overlong deletion prefix", "a\n", "--- a\n+++ b\n@@ -1 +1 @@\n-a\n+b\n--extra\n", "more lines")
+    expect_fails("overlong insertion prefix", "a\n", "--- a\n+++ b\n@@ -1 +1 @@\n-a\n+b\n+++extra\n", "more lines")
 
     # Strict patcher: error names the hunk; drift needs an explicit offset budget.
     var base = numbered(12, List[Int]())

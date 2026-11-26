@@ -181,7 +181,9 @@ def parse_patch(text: Span[Byte, _]) raises -> ParsedPatch:
                 pos = _line_end(text, pos)
             if pos < n:  # more hunk lines than the header promised
                 var c = text[pos]
-                if c == 32 or (c == 43 and not _starts_with(text, pos, "+++ ")) or (c == 45 and not _starts_with(text, pos, "--")):
+                var next_e = _line_end(text, pos)
+                var next_file = _starts_with(text, pos, "--- ") and _starts_with(text, next_e, "+++ ")
+                if not next_file and (c == 32 or c == 43 or c == 45):
                     raise Error("difpatch parse: hunk " + String(len(patch.hunks) + 1) + " has more lines than its header counts")
             hunk.text_end = pos
             patch.hunks.append(hunk^)
