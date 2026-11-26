@@ -18,19 +18,16 @@ Everything is exposed from one package: `from difpatch import ...`.
 
 ## Install
 
-Once difpatch is listed on the
-[Modular community channel](https://github.com/modular/modular-community), add the
-channel to your `pixi.toml` and install it:
-
-```toml
-channels = ["https://conda.modular.com/max", "https://repo.prefix.dev/modular-community", "conda-forge"]
-```
+difpatch is published on [prefix.dev](https://prefix.dev/saalineo/saalineo) for
+linux-64 and requires Mojo 1.2.0. In a pixi project:
 
 ```bash
+pixi workspace channel add https://prefix.dev/saalineo/saalineo https://conda.modular.com/max
 pixi add difpatch
 ```
 
-The package is the library only and requires Mojo 1.2.0. To get the CLI, build from source.
+Then import it with `from difpatch import unified_diff, apply_patch`. The package
+is the library only. To get the CLI, build from source.
 
 ## Quick start
 
