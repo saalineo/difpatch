@@ -100,6 +100,8 @@ struct _Matcher:
 def apply_report(
     original: Span[Byte, _], patch_text: Span[Byte, _], patch: ParsedPatch, opts: ApplyOptions
 ) raises -> ApplyReport:
+    if opts.max_offset < 0 or opts.max_fuzz < 0:
+        raise Error("difpatch apply: max_offset and max_fuzz must be >= 0")
     var lines = split(original, LineSplitter())
     var nlines = len(lines)
     var out = List[Byte](capacity=len(original) + patch.inserted_bytes)  # true upper bound

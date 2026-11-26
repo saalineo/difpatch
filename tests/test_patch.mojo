@@ -81,6 +81,24 @@ def main() raises:
     expect_fails("overlong deletion prefix", "a\n", "--- a\n+++ b\n@@ -1 +1 @@\n-a\n+b\n--extra\n", "more lines")
     expect_fails("overlong insertion prefix", "a\n", "--- a\n+++ b\n@@ -1 +1 @@\n-a\n+b\n+++extra\n", "more lines")
 
+    # A damaged later header must fail, never silently drop its hunk.
+    var first = String("--- a\n+++ b\n@@ -1 +1 @@\n-a\n+A\n")
+    for header in ["@@-3 +3 @@", "@ -3 +3 @@", "x@@ -3 +3 @@"]:
+        expect_fails("damaged " + header, "a\nb\nc\n", first + header + "\n-c\n+C\n", "unexpected text")
+    expect_fails("damaged only header", "a\n", "--- a\n+++ b\n@@-1 +1 @@\n-a\n+A\n", "unexpected text")
+    expect_eq("trailing blank lines", apply_patch("a\n", first + "\n \t\r\n"), "A\n")
+    # Start 0 is only legal for an empty range; it used to index line -1 and abort.
+    expect_fails("old start 0", "a\n", "--- a\n+++ b\n@@ -0,1 +1 @@\n-z\n+A\n", "malformed hunk header")
+    expect_fails("new start 0", "a\n", "--- a\n+++ b\n@@ -1 +0 @@\n-a\n+A\n", "malformed hunk header")
+
+    # The git format-patch signature is not hunk content; anything else there still fails.
+    expect_eq("signature", apply_patch("a\n", first + "-- \n2.50.0\n\n"), "A\n")
+    expect_eq("signature crlf", apply_patch("a\n", first + "-- \r\n2.50.0\r\n"), "A\n")
+    expect_fails("fake signature", "a\n", first + "-- \nnot a version\n", "more lines")
+    expect_fails("hunk after signature", "a\n", first + "-- \n2.50.0\n@@ -3 +3 @@\n-c\n+C\n", "more lines")
+    expect_fails("negative offset", "a\n", first, "must be >= 0", -1)
+    expect_fails("negative fuzz", "a\n", first, "must be >= 0", 0, -1)
+
     # Strict patcher: error names the hunk; drift needs an explicit offset budget.
     var base = numbered(12, List[Int]())
     var patch = unified_diff(base, numbered(12, [6]))

@@ -58,7 +58,7 @@ def main() raises:
     print(apply_patch("a\nb\nc\n", patch), end="")   # a\nB\nc\n
 ```
 
-See the [full documentation](docs/documentation.md) for every type, option, error and known issue.
+See the [full documentation](docs/documentation.md) for every type, option and error.
 
 ## API (Layer 4)
 
@@ -146,7 +146,8 @@ the line before the change, and a count of 1 is written without `,1`. The parser
 by their header counts rather than by line prefixes, so content such as `--- x` is not
 mistaken for a header. It tolerates git preambles, timestamps after a tab, omitted counts,
 section headings, and blank context lines whose trailing space was stripped. It rejects
-truncated hunks, hunks with more lines than counted, and multi-file patches.
+truncated hunks, hunks with more lines than counted, damaged hunk headers or other
+non-blank text outside a hunk, and multi-file patches.
 
 ## Performance
 

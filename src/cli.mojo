@@ -52,6 +52,8 @@ def main() raises:
             if arg == "-U" or arg == "--context":
                 context = n
             elif arg == "--max-cost":
+                if n > 0xFFFFFFFF:
+                    raise Error(arg + " must be at most 4294967295")
                 max_cost = n
             elif arg == "--offset":
                 offset = n

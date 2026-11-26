@@ -105,6 +105,8 @@ def _parse_header(text: Span[Byte, _], pos: Int, end: Int) raises -> ParsedHunk:
         p += 1
         d = _digits(text, p, end)
     _expect(text, p, " @@")
+    if (a == 0 and b > 0) or (c == 0 and d > 0):
+        raise Error("start line 0 needs a line count of 0")
     return ParsedHunk(a, b, c, d, pos)
 
 
@@ -116,6 +118,24 @@ def _mark_no_eol(text: Span[Byte, _], mut hunk: ParsedHunk, at: Int) raises:
     if text[end - 1] == 10:  # the patch's own line terminator is not file content
         last.len -= 1
     last.no_eol = True
+
+
+def _is_blank(text: Span[Byte, _], start: Int, end: Int) -> Bool:
+    for i in range(start, end):
+        if text[i] != 32 and text[i] != 10 and text[i] != 13 and text[i] != 9:
+            return False
+    return True
+
+
+def _is_signature(text: Span[Byte, _], pos: Int) -> Bool:
+    """The `git format-patch` trailer: "-- ", a version line, then only blank lines."""
+    # shortcut: custom --signature text is rejected; widen only if users need it.
+    if not (_starts_with(text, pos, "-- \n") or _starts_with(text, pos, "-- \r\n")):
+        return False
+    var version = _line_end(text, pos)
+    if version >= len(text) or text[version] < 48 or text[version] > 57:
+        return False
+    return _is_blank(text, _line_end(text, version), len(text))
 
 
 def parse_patch(text: Span[Byte, _]) raises -> ParsedPatch:
@@ -130,9 +150,8 @@ def parse_patch(text: Span[Byte, _]) raises -> ParsedPatch:
             break
         pos = e
     if not found:
-        for i in range(n):
-            if text[i] != 32 and text[i] != 10 and text[i] != 13 and text[i] != 9:
-                raise Error("difpatch parse: no unified diff header found")
+        if not _is_blank(text, 0, n):
+            raise Error("difpatch parse: no unified diff header found")
         return patch^  # blank patch = no changes
     patch.old_label = _label(text, pos)
     pos = _line_end(text, pos)
@@ -179,7 +198,8 @@ def parse_patch(text: Span[Byte, _]) raises -> ParsedPatch:
             if pos < n and text[pos] == 92:
                 _mark_no_eol(text, hunk, pos)
                 pos = _line_end(text, pos)
-            if pos < n:  # more hunk lines than the header promised
+            var signed = _is_signature(text, pos)
+            if pos < n and not signed:  # more hunk lines than the header promised
                 var c = text[pos]
                 var next_e = _line_end(text, pos)
                 var next_file = _starts_with(text, pos, "--- ") and _starts_with(text, next_e, "+++ ")
@@ -187,8 +207,12 @@ def parse_patch(text: Span[Byte, _]) raises -> ParsedPatch:
                     raise Error("difpatch parse: hunk " + String(len(patch.hunks) + 1) + " has more lines than its header counts")
             hunk.text_end = pos
             patch.hunks.append(hunk^)
+            if signed:
+                break
         elif (_starts_with(text, pos, "--- ") and _starts_with(text, e, "+++ ")) or _starts_with(text, pos, "diff "):
             raise Error("difpatch parse: multiple files in one patch are not supported (line " + String(_line_no(text, pos)) + ")")
-        else:
+        elif _is_blank(text, pos, e):
             pos = e
+        else:  # skipping it could silently drop a hunk with a damaged header
+            raise Error("difpatch parse: unexpected text at line " + String(_line_no(text, pos)))
     return patch^

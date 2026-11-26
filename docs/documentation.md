@@ -13,7 +13,6 @@ Reference for difpatch 0.1.0 on Mojo 1.2.0.
 - [Command line](#command-line)
 - [Errors](#errors)
 - [Performance and limits](#performance-and-limits)
-- [Known issues](#known-issues)
 - [Contributing](#contributing)
 
 ## Setup
@@ -103,7 +102,7 @@ Applies a single-file patch and returns the new text. It is all or nothing: if a
 hunk is rejected, it raises with the first rejected hunk's message and returns no text.
 
 - By default every hunk must match byte for byte at its stated line.
-- Pass non-negative values for `max_offset` and `max_fuzz`.
+- Raises if `max_offset` or `max_fuzz` is negative.
 - A blank patch, or one with `---`/`+++` headers and no hunks, returns `original`.
 - The labels in the patch are not compared with anything. You choose the input.
 
@@ -352,15 +351,20 @@ Accepted:
 - Omitted counts (`@@ -1 +1 @@`) and section headings after the closing `@@`.
 - Empty context lines whose leading space was stripped.
 - `\ No newline at end of file` markers.
+- A `git format-patch` signature (`-- ` and a version number) at the end. Custom
+  signature text is rejected.
 
 Rejected with an error:
 
 - Non-blank text with no `---`/`+++` header pair.
-- A malformed line starting with `@@ ` after the headers.
+- A malformed hunk header, including start line `0` with a nonzero count.
+- Any other non-blank text after the headers that is not part of a hunk.
 - A truncated hunk, or a hunk with more lines than its header counts.
 - A second file in the same patch.
 
-Other lines between hunks are ignored. See [Known issues](#known-issues).
+Blank lines between and after hunks are ignored. A patch cut off in the middle of
+its final line is accepted, and that line is applied without a newline if it ends
+the file.
 
 ## Applying patches
 
@@ -445,7 +449,7 @@ difpatch apply FILE PATCH [--offset N] [--fuzz N]
 | Option | Applies to | Default | Meaning |
 |---|---|---|---|
 | `-U N`, `--context N` | diff | 3 | Context lines per hunk. |
-| `--max-cost N` | diff | 0 | Search limit; `0` is unlimited. Keep below 4294967296. |
+| `--max-cost N` | diff | 0 | Search limit; `0` is unlimited. At most 4294967295. |
 | `--offset N` | apply | 0 | Maximum line drift. |
 | `--fuzz N` | apply | 0 | Maximum ignored context lines per hunk end. |
 | `-h`, `--help` | | | Print usage. |
@@ -473,11 +477,13 @@ All failures raise `Error` with a message. There are no error codes.
 | Message contains | Cause |
 |---|---|
 | `context must be >= 0` | Negative context. |
+| `max_offset and max_fuzz must be >= 0` | Negative apply option. |
 | `labels cannot contain line breaks` | Newline in a diff label. |
 | `input larger than 4 GiB` | Input too large to tokenize. |
 | `splitter made no progress` | Faulty custom splitter. |
 | `no unified diff header found` | The text is not a unified diff. |
 | `malformed hunk header` | Bad `@@` line. |
+| `unexpected text` | Non-blank text outside a hunk, such as a damaged header. |
 | `is truncated` | The patch ends inside a hunk. |
 | `unexpected line` | A hunk line does not fit the header counts. |
 | `has more lines than its header counts` | Header counts too small. |
@@ -506,21 +512,6 @@ inputs. Benchmark figures are in the [README](../README.md#performance), and
 | Patch scope | One file per patch. |
 | Not supported | Reverse apply, ignoring whitespace, renames, mode changes, binary patches. |
 | File creation and deletion | `/dev/null` labels have no special meaning; your code creates or deletes files. |
-
-## Known issues
-
-Present in 0.1.0 and confirmed by running them.
-
-| Issue | Effect | Workaround |
-|---|---|---|
-| A header such as `@@ -0,1 +1 @@` (old start 0 with a nonzero count) | **The process aborts** with an index assertion when the hunk fails to match. It cannot be caught. | Before applying untrusted patches, reject hunks where `old_start == 0` and `old_count > 0`. |
-| A later hunk header damaged so that it no longer starts with `@@ ` (for example `@@-5 +5 @@`) | **That hunk is silently skipped** and `apply_patch` reports success. | Compare the number of parsed hunks with what you expect. |
-| `git format-patch` signature (`-- ` and a version after the last hunk) | Rejected as "more lines than its header counts". | Remove the signature, or use `git diff` output. |
-| Negative `max_offset` or `max_fuzz` | Every hunk is rejected with a "does not match" message. | Pass `0` or more. |
-| `--max-cost` of 4294967296 or more | Accepted without an error although it does not fit the 32-bit setting. | Use a smaller value. |
-
-Also note that a patch cut off in the middle of its final line is accepted, and
-that line is applied without a newline if it ends the file.
 
 ## Contributing
 
