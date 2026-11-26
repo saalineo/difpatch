@@ -88,6 +88,7 @@ def main() raises:
     expect_fails("drift strict", drifted, patch, "hunk 1")
     expect_eq("drift offset", apply_patch(drifted, patch, 5), "new1\nnew2\n" + numbered(12, [6]))
     expect_fails("offset too small", drifted, patch, "hunk 1", 1)
+    expect_eq("huge offset", apply_patch("a\n", "--- a\n+++ b\n@@ -2000000000 +2000000000 @@\n-a\n+b\n", 2_000_000_000), "b\n")
     var report = apply_report(drifted.as_bytes(), patch.as_bytes(), parse_patch(patch.as_bytes()), ApplyOptions(5, 0))
     if report.results[0].offset != 2:
         raise Error("report offset")

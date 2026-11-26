@@ -118,8 +118,21 @@ def apply_report(
         var offset = 0
         var fuzz = 0
         var ambiguous = False
+        var first_dist = 0
+        var last_pos = nlines - nold
+        var last_dist = opts.max_offset
+        if cursor > last_pos:
+            last_dist = -1
+        elif p0 < cursor:
+            first_dist = cursor - p0
+            last_dist = min(last_dist, last_pos - p0)
+        elif p0 > last_pos:
+            first_dist = p0 - last_pos
+            last_dist = min(last_dist, p0 - cursor)
+        else:
+            last_dist = min(last_dist, max(p0 - cursor, last_pos - p0))
         for f in range(opts.max_fuzz + 1):
-            for dist in range(opts.max_offset + 1):
+            for dist in range(first_dist, last_dist + 1):
                 var fwd = m.matches(h, original, lines, patch_text, p0 + dist, cursor, f)
                 var back = dist > 0 and m.matches(h, original, lines, patch_text, p0 - dist, cursor, f)
                 if fwd and back:
