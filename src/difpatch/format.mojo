@@ -16,8 +16,7 @@ def hunk_header(old_start: UInt32, old_count: UInt32, new_start: UInt32, new_cou
 
 
 def _push(mut out: List[Byte], text: String):
-    for b in text.as_bytes():
-        out.append(b)
+    out.extend(text.as_bytes())
 
 
 def _validate_label(label: String) raises:
@@ -29,8 +28,7 @@ def _validate_label(label: String) raises:
 def _push_line(mut out: List[Byte], prefix: Byte, src: Span[Byte, _], span: Span32):
     out.append(prefix)
     var end = Int(span.start) + Int(span.len)
-    for i in range(Int(span.start), end):
-        out.append(src[i])
+    out.extend(src[Int(span.start) : end])
     if src[end - 1] != 10:
         _push(out, "\n\\ No newline at end of file\n")
 
