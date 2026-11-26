@@ -67,7 +67,7 @@ def hash_span(src: Span[Byte, _], start: Int, end: Int) -> UInt64:
     var tail = UInt64(0)
     var shift = UInt64(0)
     while i < n:
-        tail |= UInt64(p[i]) << shift
+        tail |= UInt64(p.unsafe_load[alignment=1](i)) << shift
         shift += 8
         i += 1
     h = (h ^ tail) * K
