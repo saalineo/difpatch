@@ -7,9 +7,9 @@ package:
   version: ${{ version }}
 
 source:
-  # Set to the full SHA of the pushed release commit before submitting.
+  # Full SHA of the release commit.
   - git: https://github.com/saalineo/difpatch.git
-    rev: "REPLACE_WITH_RELEASE_COMMIT_SHA"
+    rev: "b944966f3cf37b6d164fa9bef795fd828b4eef89"
 
 build:
   number: 0
