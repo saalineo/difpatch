@@ -16,7 +16,25 @@ text ──▶ tokens (Layer 1) ──▶ edit script (Layer 2) ──▶ hunks 
 
 Everything is exposed from one package: `from difpatch import ...`.
 
+## Install
+
+Once difpatch is listed on the
+[Modular community channel](https://github.com/modular/modular-community), add the
+channel to your `pixi.toml` and install it:
+
+```toml
+channels = ["https://conda.modular.com/max", "https://repo.prefix.dev/modular-community", "conda-forge"]
+```
+
+```bash
+pixi add difpatch
+```
+
+The package is the library only and requires Mojo 1.2.0. To get the CLI, build from source.
+
 ## Quick start
+
+From a clone of this repository:
 
 ```bash
 pixi run build_cli          # builds build/difpatch
@@ -39,6 +57,8 @@ def main() raises:
     #  c
     print(apply_patch("a\nb\nc\n", patch), end="")   # a\nB\nc\n
 ```
+
+See the [full documentation](docs/documentation.md) for every type, option, error and known issue.
 
 ## API (Layer 4)
 
@@ -200,3 +220,7 @@ tools/          bench.mojo (stage timings), crosscheck.py (git/patch interop)
 - Without `max_cost`, a very large, very different input can take O(ND) time and
   O(N+M) memory.
 - Equal results are not guaranteed to match `diff`'s choice among equally minimal scripts.
+
+## License
+
+[MIT](LICENSE)
